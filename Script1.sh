@@ -5,3 +5,5 @@ mkdir sars-cov2-project
 
 # Download dataset
 fastq-dump --split-files 
+
+# Quality control
