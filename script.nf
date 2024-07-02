@@ -13,39 +13,20 @@ params.minQuality = 20
 params.minLength = 50
 
 // CHANNELS
-ref_Ch = Channel.fromPath(params.genome, checkIfExists: true)
-reads_ch = Channel.fromFilePairs(params.reads, checkIfExist: true)
+ref_ch = Channel.fromPath(params.genome, checkIfExists: true)
+reads_ch = Channel.fromFilePairs(params.reads, checkIfExists: true)
 
 // WORKFLOW
 workflow {
-
-    // Quality control
-    reads_ch | FASTQC
-
-    // Trimming of reads
-    trimmed_reads_ch = reads_ch | TRIMMING
-
-    // Index the reference genome
-    indexed_genome_ch = BWA_INDEX(ref_Ch)
-
-    // Align reads to reference genome
-    aligned_bams_ch = BWA_ALIGN(indexed_genome_ch.out.bwa_index, trimmed_reads_ch)
-
-    // Sort and index BAM files
-    sorted_bams_ch = SORT_AND_INDEX_BAM(aligned_bams_ch)
-
-    // Calculate read coverage (mpileup)
-    pileup_ch = BCFTOOLS_MPILEUP(sorted_bams_ch, ref_Ch)
-
-    // Call variants
-    raw_vcf_ch = BCFTOOLS_CALL(pileup_ch, ref_Ch)
-
-    // Filter and report SNVs
-    filtered_vcf_ch = VCFUTILS(raw_vcf_ch)
-
-    // Additional steps like extracting SNPs and Indels
-    SNPs = EXTRACT_SNPS(filtered_vcf_ch)
-    INDELs = EXTRACT_INDELS(filtered_vcf_ch)
+    FASTQC(reads_ch)
+    BWA_INDEX(ref_ch)
+    BWA_ALIGN(BWA_INDEX.out.bwa_index.combine(reads_ch))
+    SAMTOOLS_SORT(BWA_ALIGN.out.aligned_bam)
+    BCFTOOLS_MPILEUP(SAMTOOLS_SORT.out.sorted_bam.combine(ref_ch))
+    BCFTOOLS_CALL(BCFTOOLS_MPILEUP.out.pileup)
+    VCFUTILS(BCFTOOLS_CALL.out.raw_vcf)
+    EXTRACT_SNPS(VCFUTILS.out.filtered_vcf)
+    EXTRACT_INDELS(VCFUTILS.out.filtered_vcf)
 }
 
 // PROCESSES
@@ -54,7 +35,7 @@ workflow {
 process FASTQC {
     tag { "FASTQC ${sample_id}" }
     label 'process_low'
-    cpus 6
+    cpus 4 // Reduced to fit within the CPU limit
 
     publishDir("${params.outdir}/QC", mode: 'copy')
 
@@ -70,31 +51,11 @@ process FASTQC {
     """
 }
 
-// Trimming
-process TRIMMING {
-    tag { "TRIMMING ${sample_id}" }
-    label 'process_low'
-    cpus 4
-
-    publishDir("${params.outdir}/Trimming", mode: 'copy')
-
-    input:
-    tuple val(sample_id), path(reads)
-
-    output:
-    tuple val(sample_id), path("${sample_id}_1.trimmed.fastq.gz"), path("${sample_id}_2.trimmed.fastq.gz"), emit: trimmed_fastq
-
-    script:
-    """
-    sickle pe -f ${reads[0]} -r ${reads[1]} -t sanger -o ${sample_id}_1.trimmed.fastq.gz -p ${sample_id}_2.trimmed.fastq.gz -s ${sample_id}_singletons.fastq.gz -q ${params.minQuality} -l ${params.minLength}
-    """
-}
-
 // Index the reference genome
 process BWA_INDEX {
     tag { "BWA_INDEX ${genome}" }
     label 'process_low'
-    cpus 6
+    cpus 4 // Reduced to fit within the CPU limit
 
     publishDir("${params.outdir}/bwa_index", mode: 'copy')
 
@@ -110,11 +71,11 @@ process BWA_INDEX {
     """
 }
 
-// Align reads to reference genome & create BAM file.
+// Align reads to reference genome & create BAM file
 process BWA_ALIGN {
     tag { "BWA_ALIGN ${sample_id}" }
     label 'process_medium'
-    cpus 6
+    cpus 6 // Adjusted to fit within the CPU limit
 
     publishDir("${params.outdir}/bwa_align", mode: 'copy')
 
@@ -131,11 +92,11 @@ process BWA_ALIGN {
     """
 }
 
-// Sort and index BAM files
-process SORT_AND_INDEX_BAM {
-    tag { "SORT_AND_INDEX_BAM ${sample_id}" }
+// Sort BAM files
+process SAMTOOLS_SORT {
+    tag { "SORT_BAM ${sample_id}" }
     label 'process_medium'
-    cpus 4
+    cpus 4 // Reduced to fit within the CPU limit
 
     publishDir("${params.outdir}/sorted_bam", mode: 'copy')
 
@@ -156,7 +117,7 @@ process SORT_AND_INDEX_BAM {
 process BCFTOOLS_MPILEUP {
     tag { "BCFTOOLS_MPILEUP ${sample_id}" }
     label 'process_high'
-    cpus 7
+    cpus 7 // Max CPU limit
 
     publishDir("${params.outdir}/mpileup", mode: 'copy')
 
@@ -177,13 +138,12 @@ process BCFTOOLS_MPILEUP {
 process BCFTOOLS_CALL {
     tag { "BCFTOOLS_CALL ${sample_id}" }
     label 'process_high'
-    cpus 7
+    cpus 7 // Max CPU limit
 
     publishDir("${params.outdir}/variants", mode: 'copy')
 
     input:
     path(pileup)
-    path(reference)
 
     output:
     path("${sample_id}.raw.vcf"), emit: raw_vcf
@@ -198,7 +158,7 @@ process BCFTOOLS_CALL {
 process VCFUTILS {
     tag { "VCFUTILS ${sample_id}" }
     label 'process_high'
-    cpus 4
+    cpus 4 // Adjusted to fit within the CPU limit
 
     publishDir("${params.outdir}/filtered_vcf", mode: 'copy')
 
@@ -218,7 +178,7 @@ process VCFUTILS {
 process EXTRACT_SNPS {
     tag { "EXTRACT_SNPS ${sample_id}" }
     label 'process_low'
-    cpus 2
+    cpus 2 // Adjusted to fit within the CPU limit
 
     publishDir("${params.outdir}/snps", mode: 'copy')
 
@@ -238,7 +198,7 @@ process EXTRACT_SNPS {
 process EXTRACT_INDELS {
     tag { "EXTRACT_INDELS ${sample_id}" }
     label 'process_low'
-    cpus 2
+    cpus 2 // Adjusted to fit within the CPU limit
 
     publishDir("${params.outdir}/indels", mode: 'copy')
 
@@ -253,4 +213,3 @@ process EXTRACT_INDELS {
     bcftools view -v indels ${vcf} -o ${sample_id}.indels.vcf
     """
 }
-
