@@ -35,7 +35,7 @@ workflow {
 process FASTQC {
     tag { "FASTQC ${sample_id}" }
     label 'process_low'
-    cpus 4 // Reduced to fit within the CPU limit
+    cpus 4 
 
     publishDir("${params.outdir}/QC", mode: 'copy')
 
@@ -55,7 +55,7 @@ process FASTQC {
 process BWA_INDEX {
     tag { "BWA_INDEX ${genome}" }
     label 'process_low'
-    cpus 4 // Reduced to fit within the CPU limit
+    cpus 4 
 
     publishDir("${params.outdir}/bwa_index", mode: 'copy')
 
@@ -75,7 +75,7 @@ process BWA_INDEX {
 process BWA_ALIGN {
     tag { "BWA_ALIGN ${sample_id}" }
     label 'process_medium'
-    cpus 6 // Adjusted to fit within the CPU limit
+    cpus 6 
 
     publishDir("${params.outdir}/bwa_align", mode: 'copy')
 
@@ -96,8 +96,7 @@ process BWA_ALIGN {
 process SAMTOOLS_SORT {
     tag { "SORT_BAM ${sample_id}" }
     label 'process_medium'
-    cpus 4 // Reduced to fit within the CPU limit
-
+    cpus 4 
     publishDir("${params.outdir}/sorted_bam", mode: 'copy')
 
     input:
@@ -117,7 +116,7 @@ process SAMTOOLS_SORT {
 process BCFTOOLS_MPILEUP {
     tag { "BCFTOOLS_MPILEUP ${sample_id}" }
     label 'process_high'
-    cpus 7 // Max CPU limit
+    cpus 7 
 
     publishDir("${params.outdir}/mpileup", mode: 'copy')
 
@@ -138,8 +137,7 @@ process BCFTOOLS_MPILEUP {
 process BCFTOOLS_CALL {
     tag { "BCFTOOLS_CALL ${sample_id}" }
     label 'process_high'
-    cpus 7 // Max CPU limit
-
+    cpus 7 
     publishDir("${params.outdir}/variants", mode: 'copy')
 
     input:
@@ -158,8 +156,7 @@ process BCFTOOLS_CALL {
 process VCFUTILS {
     tag { "VCFUTILS ${sample_id}" }
     label 'process_high'
-    cpus 4 // Adjusted to fit within the CPU limit
-
+    cpus 4 
     publishDir("${params.outdir}/filtered_vcf", mode: 'copy')
 
     input:
@@ -198,7 +195,7 @@ process EXTRACT_SNPS {
 process EXTRACT_INDELS {
     tag { "EXTRACT_INDELS ${sample_id}" }
     label 'process_low'
-    cpus 2 // Adjusted to fit within the CPU limit
+    cpus 2 
 
     publishDir("${params.outdir}/indels", mode: 'copy')
 
