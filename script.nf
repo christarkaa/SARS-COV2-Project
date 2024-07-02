@@ -18,9 +18,10 @@ reads_ch = Channel.fromFilePairs(params.reads, checkIfExists: true)
 
 // WORKFLOW
 workflow {
-    FASTQC(reads_ch)
+    FASTQC(reads_ch) // Perform quality control on raw reads
+    SICKLE_TRIM(reads_ch) // Trims raw reads after QC
     BWA_INDEX(ref_ch)
-    BWA_ALIGN(BWA_INDEX.out.bwa_index.combine(reads_ch))
+    BWA_ALIGN(BWA_INDEX.out.bwa_index.combine(SICKLE_TRIM.out.trimmed_reads))
     SAMTOOLS_SORT(BWA_ALIGN.out.aligned_bam)
     BCFTOOLS_MPILEUP(SAMTOOLS_SORT.out.sorted_bam.combine(ref_ch))
     BCFTOOLS_CALL(BCFTOOLS_MPILEUP.out.pileup)
@@ -48,6 +49,26 @@ process FASTQC {
     script:
     """
     fastqc ${reads}
+    """
+}
+
+// Trimming with Sickle
+process SICKLE_TRIM {
+    tag { "SICKLE_TRIM ${sample_id}" }
+    label 'process_low'
+    cpus 4 
+
+    publishDir("${params.outdir}/trimmed", mode: 'copy')
+
+    input:
+    tuple val(sample_id), path(reads)
+
+    output:
+    tuple val(sample_id), path("${sample_id}_trimmed_1.fastq"), path("${sample_id}_trimmed_2.fastq"), emit: trimmed_reads
+
+    script:
+    """
+    sickle pe -f ${reads[0]} -r ${reads[1]} -t sanger -o ${sample_id}_trimmed_1.fastq -p ${sample_id}_trimmed_2.fastq -s ${sample_id}_trimmed_singles.fastq -q ${params.minQuality} -l ${params.minLength}
     """
 }
 
@@ -175,7 +196,7 @@ process VCFUTILS {
 process EXTRACT_SNPS {
     tag { "EXTRACT_SNPS ${sample_id}" }
     label 'process_low'
-    cpus 2 // Adjusted to fit within the CPU limit
+    cpus 2 
 
     publishDir("${params.outdir}/snps", mode: 'copy')
 
