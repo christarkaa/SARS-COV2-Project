@@ -177,7 +177,7 @@ process BCFTOOLS_MPILEUP {
 process BCFTOOLS_CALL {
     tag { "BCFTOOLS_CALL ${sample_id}" }
     label 'process_high'
-    cpus 8
+    cpus 7
 
     publishDir("${params.outdir}/variants", mode: 'copy')
 
