@@ -156,7 +156,7 @@ process SORT_AND_INDEX_BAM {
 process BCFTOOLS_MPILEUP {
     tag { "BCFTOOLS_MPILEUP ${sample_id}" }
     label 'process_high'
-    cpus 8
+    cpus 7
 
     publishDir("${params.outdir}/mpileup", mode: 'copy')
 
