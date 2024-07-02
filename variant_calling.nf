@@ -18,8 +18,8 @@ reads_ch = Channel.fromFilePairs(params.reads, checkIfExists: true)
 
 // WORKFLOW
 workflow {
-    FASTQC(reads_ch) // Perform quality control on raw reads
-    SICKLE_TRIM(reads_ch) // Trims raw reads after QC
+    FASTQC(reads_ch) 
+    SICKLE_TRIM(reads_ch) 
     BWA_INDEX(ref_ch)
     BWA_ALIGN(BWA_INDEX.out.bwa_index.combine(SICKLE_TRIM.out.trimmed_reads))
     SAMTOOLS_SORT(BWA_ALIGN.out.aligned_bam)
