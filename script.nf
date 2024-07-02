@@ -8,7 +8,7 @@ nextflow.enable.dsl=2
 // Pipeline Input Parameters
 params.outdir = 'results'
 params.genome = "/Users/christophertarkaa/sars-cov2-project/Reference/MN908947.3.fasta"
-params.reads = "/Users/christophertarkaa/sars-cov2-project/covid_samples/*_{1,2}.fastq.gz"
+params.reads = "/Users/christophertarkaa/sars-cov2-project/covid_samples/*_{1,2}.fastq"
 params.minQuality = 20
 params.minLength = 50
 
