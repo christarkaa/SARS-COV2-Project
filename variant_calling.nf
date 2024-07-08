@@ -101,7 +101,7 @@ process BWA_ALIGN {
     publishDir("${params.outdir}/bwa_align", mode: 'copy')
 
     input:
-    tuple path(index), path("*"), emit: bwa_index
+    tuple path(index), path("*")
     tuple val(sample_id), path(reads)
 
     output:
