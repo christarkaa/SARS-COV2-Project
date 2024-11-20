@@ -1,0 +1,12 @@
+name: covid_variant_calling
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bwa=0.7.17
+  - samtools=1.13
+  - bcftools=1.13
+  - fastqc=0.11.9
+  - sickle=1.33
+
